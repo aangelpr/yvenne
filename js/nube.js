@@ -5,8 +5,8 @@
    como siempre (modo sin nube).
    ============================================================ */
 
-const SUPABASE_URL = "";   // ej. "https://abcdefgh.supabase.co"
-const SUPABASE_KEY = "";   // la llave "anon public" (es pública, no pasa nada por mostrarla)
+const SUPABASE_URL = "https://tqngknsvpcywzmtnjvij.supabase.co";   // ej. "https://abcdefgh.supabase.co"
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxbmdrbnN2cGN5d3ptdG5qdmlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0OTA5MjYsImV4cCI6MjEwMDA2NjkyNn0.If2WVSlChNC2n0uzqzs2ru-AFBzlwKvX6oDW3k_um14";   // la llave "anon public" (es pública, no pasa nada por mostrarla)
 
 /* Descarga los datos de la tienda desde la nube y reemplaza
    los de js/datos.js. Si no hay internet o tarda más de 3.5 s,
