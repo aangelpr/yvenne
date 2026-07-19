@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="color-scheme" content="light only">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilos.css">
+<title>YVENNE — Categoría</title>
+<style>
+  .page-head{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    padding:16px 48px 20px; flex-wrap:wrap; gap:20px;
+  }
+  .page-head h1{ font-size:44px; margin-bottom:10px; }
+  .page-head p{ max-width:420px; color:var(--muted); font-size:15px; line-height:1.5; margin-bottom:16px; font-family:-apple-system,sans-serif; }
+  .back-btn{
+    display:inline-flex; align-items:center; gap:8px; text-decoration:none; color:var(--ink);
+    border:1px solid var(--ink); border-radius:999px; padding:9px 18px;
+    font-size:13px; background:transparent; cursor:pointer; font-family:-apple-system,sans-serif;
+  }
+
+  /* Barra de filtros */
+  .filters{
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:0 48px 24px; flex-wrap:wrap; font-family:-apple-system,sans-serif;
+  }
+  .chips{ display:flex; gap:8px; flex-wrap:wrap; }
+  .chip{
+    border:1px solid var(--line); border-radius:999px; padding:8px 16px; font-size:12.5px;
+    background:var(--card); cursor:pointer; color:var(--ink); font-family:inherit;
+  }
+  .chip.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
+  .sort{ display:flex; align-items:center; gap:10px; font-size:13px; color:var(--muted); }
+  .sort select{
+    font-family:inherit; border:1px solid var(--line); border-radius:999px;
+    padding:8px 14px; background:var(--card); color:var(--ink);
+  }
+  .result-count{ padding:0 48px 16px; font-size:13px; color:var(--muted); font-family:-apple-system,sans-serif; }
+
+  .grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:20px; padding:0 48px 70px; }
+
+  @media (max-width:1000px){ .grid{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:620px){
+    .page-head{ padding:14px 16px 12px; }
+    .page-head h1{ font-size:30px; }
+    .filters{ padding:0 16px 16px; }
+    .result-count{ padding:0 16px 12px; }
+    .grid{ grid-template-columns:1fr 1fr; gap:10px; padding:0 10px 40px; }
+    .chip{ padding:7px 12px; font-size:12px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="siteHeader"></div>
+
+<div class="breadcrumb"><a href="index.html">Inicio</a> &nbsp;›&nbsp; <span id="crumbName">Categoría</span></div>
+
+<div class="page-head">
+  <div>
+    <h1 id="pageTitle">Categoría</h1>
+    <p id="pageDesc"></p>
+    <a class="back-btn" href="categorias.html">‹ Volver a categorías</a>
+  </div>
+  <div class="sort sans">
+    Ordenar por:
+    <select id="sortSelect">
+      <option value="populares">Más populares</option>
+      <option value="precio-asc">Precio: menor a mayor</option>
+      <option value="precio-desc">Precio: mayor a menor</option>
+      <option value="novedades">Novedades</option>
+    </select>
+  </div>
+</div>
+
+<div class="filters">
+  <div class="chips" id="priceChips">
+    <button class="chip active" data-min="0" data-max="999999">Todos los precios</button>
+    <button class="chip" data-min="0" data-max="199">Hasta $199</button>
+    <button class="chip" data-min="200" data-max="399">$200 – $399</button>
+    <button class="chip" data-min="400" data-max="699">$400 – $699</button>
+    <button class="chip" data-min="700" data-max="999999">$700 o más</button>
+  </div>
+  <div class="chips">
+    <button class="chip" id="soloOfertas">Solo ofertas</button>
+  </div>
+</div>
+
+<div class="result-count" id="resultCount"></div>
+
+<div class="grid" id="productGrid"></div>
+
+<div id="siteFooter"></div>
+
+<script src="js/datos.js"></script>
+<script src="js/nube.js"></script>
+<script src="js/tienda.js"></script>
+<script>
+function __iniciarPagina(){
+  const params = new URLSearchParams(location.search);
+  const catId  = params.get("cat");
+  const filtro = params.get("filtro");
+  const query  = params.get("q");
+
+  // 1) Conjunto base de productos según la URL
+  let base = CATALOGO;
+  let titulo = "Todos los productos", desc = "Explora nuestro catálogo completo.", activoNav = "categorias";
+
+  if (catId) {
+    const c = getCategoria(catId);
+    if (c) {
+      base = CATALOGO.filter(p => p.categoria === catId);
+      titulo = c.nombre; desc = c.desc;
+    }
+  } else if (filtro === "ofertas") {
+    base = CATALOGO.filter(p => p.precioAntes);
+    titulo = "Ofertas"; desc = "Productos con descuento por tiempo limitado."; activoNav = "ofertas";
+  } else if (filtro === "novedades") {
+    base = CATALOGO.filter(p => p.nuevo);
+    titulo = "Novedades"; desc = "Lo más nuevo de nuestro catálogo."; activoNav = "novedades";
+  } else if (filtro === "masvendidos") {
+    base = CATALOGO.filter(p => p.masVendido);
+    titulo = "Más vendidos"; desc = "Los favoritos de nuestros clientes."; activoNav = "masvendidos";
+  } else if (query) {
+    base = buscarProductos(query);
+    titulo = `Resultados para “${query}”`; desc = "";
+  }
+
+  renderHeader(activoNav);
+  document.title = "YVENNE — " + titulo;
+  document.getElementById("pageTitle").textContent = titulo;
+  document.getElementById("pageDesc").textContent = desc;
+  document.getElementById("crumbName").textContent = titulo;
+
+  // 2) Estado de filtros
+  let precioMin = 0, precioMax = 999999, soloOfertas = false;
+
+  function render(){
+    let lista = base.filter(p => p.precio >= precioMin && p.precio <= precioMax);
+    if (soloOfertas) lista = lista.filter(p => p.precioAntes);
+
+    const orden = document.getElementById("sortSelect").value;
+    if (orden === "precio-asc")  lista = [...lista].sort((a,b) => a.precio - b.precio);
+    if (orden === "precio-desc") lista = [...lista].sort((a,b) => b.precio - a.precio);
+    if (orden === "novedades")   lista = [...lista].sort((a,b) => (b.nuevo?1:0) - (a.nuevo?1:0));
+    if (orden === "populares")   lista = [...lista].sort((a,b) => (b.masVendido?1:0) - (a.masVendido?1:0));
+
+    const grid = document.getElementById("productGrid");
+    const count = document.getElementById("resultCount");
+
+    if (lista.length === 0) {
+      grid.innerHTML = `<div class="empty-msg" style="grid-column:1/-1;">
+        No encontramos productos con estos filtros.<br><br>
+        <a class="btn-ink" href="categorias.html">Ver todas las categorías</a>
+      </div>`;
+      count.textContent = "";
+      return;
+    }
+    count.textContent = `${lista.length} producto${lista.length === 1 ? "" : "s"}`;
+    grid.innerHTML = lista.map(cardHTML).join("");
+    activarFavoritos(grid);
+    activarReveal(grid);
+  }
+
+  // 3) Eventos de filtros
+  document.getElementById("sortSelect").addEventListener("change", render);
+
+  document.getElementById("priceChips").addEventListener("click", (e) => {
+    const chip = e.target.closest(".chip");
+    if (!chip) return;
+    document.querySelectorAll("#priceChips .chip").forEach(c => c.classList.remove("active"));
+    chip.classList.add("active");
+    precioMin = parseInt(chip.dataset.min);
+    precioMax = parseInt(chip.dataset.max);
+    render();
+  });
+
+  document.getElementById("soloOfertas").addEventListener("click", (e) => {
+    soloOfertas = !soloOfertas;
+    e.target.classList.toggle("active", soloOfertas);
+    render();
+  });
+
+  render();
+
+}
+arrancarTienda(__iniciarPagina);
+</script>
+
+</body>
+</html>

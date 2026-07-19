@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="color-scheme" content="light only">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilos.css">
+<title>YVENNE — Favoritos</title>
+<style>
+  .page-head{ padding:16px 48px 30px; }
+  .page-head h1{ font-size:38px; margin-bottom:8px; }
+  .page-head p{ color:var(--muted); font-size:14px; font-family:-apple-system,sans-serif; }
+  .grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:20px; padding:0 48px 70px; }
+  .empty-wrap{ padding:0 48px 70px; }
+  @media (max-width:1000px){ .grid{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:620px){
+    .page-head{ padding:14px 16px 20px; }
+    .page-head h1{ font-size:28px; }
+    .grid{ grid-template-columns:1fr 1fr; gap:10px; padding:0 10px 40px; }
+    .empty-wrap{ padding:0 16px 40px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="siteHeader"></div>
+
+<div class="breadcrumb"><a href="index.html">Inicio</a> &nbsp;›&nbsp; <span>Favoritos</span></div>
+
+<div class="page-head">
+  <h1>Tus favoritos</h1>
+  <p>Los productos que guardaste con el corazón ♥</p>
+</div>
+
+<div class="grid" id="favGrid"></div>
+<div class="empty-wrap" id="emptyWrap" style="display:none;">
+  <div class="empty-msg">
+    Aún no tienes favoritos. Toca el corazón en cualquier producto para guardarlo aquí.<br><br>
+    <a class="btn-ink" href="categorias.html">Explorar productos</a>
+  </div>
+</div>
+
+<div id="siteFooter"></div>
+
+<script src="js/datos.js"></script>
+<script src="js/nube.js"></script>
+<script src="js/tienda.js"></script>
+<script>
+function __iniciarPagina(){
+  renderHeader(null);
+  const grid = document.getElementById("favGrid");
+  const emptyWrap = document.getElementById("emptyWrap");
+
+  function renderFavs(){
+    const favs = leerFavoritos().map(getProducto).filter(Boolean);
+    if (favs.length === 0) {
+      grid.style.display = "none";
+      emptyWrap.style.display = "block";
+      return;
+    }
+    grid.style.display = "grid";
+    emptyWrap.style.display = "none";
+    grid.innerHTML = favs.map(cardHTML).join("");
+    activarFavoritos(grid);
+    activarReveal(grid);
+  }
+
+  // Cuando quitan un corazón desde esta página, se actualiza la lista
+  window.onFavoritoCambiado = function(){ renderFavs(); };
+
+  renderFavs();
+
+}
+arrancarTienda(__iniciarPagina);
+</script>
+
+</body>
+</html>
