@@ -192,22 +192,40 @@ function __iniciarPagina(){
     // Imágenes (galería si hay varias, degradado mientras no haya fotos)
     const mainImg = document.getElementById("mainImg");
     const fotos = fotosDe(producto);
-    function mostrarFoto(src){ mainImg.style.backgroundImage = `url('${src}')`; }
+    let fotoIdx = 0;
+    function mostrarFoto(i){
+      fotoIdx = (i + fotos.length) % fotos.length;
+      mainImg.style.backgroundImage = `url('${fotos[fotoIdx]}')`;
+      const row = document.getElementById("thumbsRow");
+      row.querySelectorAll(".thumb-mini").forEach((x, j) => x.classList.toggle("activa", j === fotoIdx));
+    }
     if (fotos.length) {
-      mostrarFoto(fotos[0]);
+      mostrarFoto(0);
       if (fotos.length > 1) {
         const row = document.getElementById("thumbsRow");
         row.style.display = "flex";
         row.innerHTML = fotos.map((f, i) => `
-          <button class="thumb-mini ${i === 0 ? "activa" : ""}" data-src="${f}" aria-label="Foto ${i + 1}"
+          <button class="thumb-mini ${i === 0 ? "activa" : ""}" data-idx="${i}" aria-label="Foto ${i + 1}"
             style="background-image:url('${f}');"></button>`).join("");
         row.addEventListener("click", (e) => {
           const b = e.target.closest(".thumb-mini");
           if (!b) return;
-          row.querySelectorAll(".thumb-mini").forEach(x => x.classList.remove("activa"));
-          b.classList.add("activa");
-          mostrarFoto(b.dataset.src);
+          mostrarFoto(parseInt(b.dataset.idx, 10));
         });
+
+        // Deslizar sobre la imagen (dedo o mouse) para cambiar de foto
+        let swipeX = null, swipeY = null;
+        mainImg.style.touchAction = "pan-y";
+        mainImg.style.cursor = "grab";
+        mainImg.addEventListener("pointerdown", (e) => { swipeX = e.clientX; swipeY = e.clientY; });
+        mainImg.addEventListener("pointerup", (e) => {
+          if (swipeX === null) return;
+          const dx = e.clientX - swipeX, dy = e.clientY - swipeY;
+          swipeX = swipeY = null;
+          if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
+          mostrarFoto(fotoIdx + (dx < 0 ? 1 : -1));
+        });
+        mainImg.addEventListener("pointercancel", () => { swipeX = swipeY = null; });
       }
     } else {
       mainImg.style.background = producto.grad;
