@@ -214,6 +214,14 @@
       <div class="buscador" style="flex:2;"><input type="text" id="buscarProd" placeholder="Buscar producto..."></div>
       <div style="flex:0;"><button class="btn" onclick="abrirEditor(null)">＋ Agregar</button></div>
     </div>
+
+    <div class="card">
+      <h3>Etiquetas personalizadas</h3>
+      <p class="ayuda" style="margin-bottom:12px;">Crea etiquetas como <b>"Entrega inmediata"</b> y paloméalas en cada producto. Cada etiqueta funciona como una categoría (con su propia página) y como una sección del inicio que puedes prender, apagar y reordenar en la pestaña <b>Página de inicio</b>.</p>
+      <div id="listaEtiquetas" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;"></div>
+      <button class="btn mini sec" onclick="agregarEtiqueta()">＋ Nueva etiqueta</button>
+    </div>
+
     <div id="listaProductos"></div>
   </div>
 
@@ -252,6 +260,24 @@
         <div class="foto-zona" id="heroDrop">Toca para elegir un archivo</div>
         <input type="file" id="heroFile" accept="image/*,video/mp4,video/webm" style="display:none;">
         <div class="ayuda" id="heroArchivoInfo" style="margin:8px 0 0;"></div>
+
+        <label>Encuadre de la imagen</label>
+        <select id="heroAjuste">
+          <option value="cubrir">Cubrir la portada (puede recortar orillas)</option>
+          <option value="completa">Mostrar la imagen completa (sin recorte)</option>
+        </select>
+
+        <div id="heroPosZona">
+          <label>Posición de la imagen <small>(mueve qué parte se ve cuando hay recorte)</small></label>
+          <div class="fila" style="align-items:center;">
+            <span class="ayuda" style="margin:0; flex:0 0 70px;">Horizontal</span>
+            <input type="range" id="heroPosX" min="0" max="100" value="50" style="flex:1;">
+          </div>
+          <div class="fila" style="align-items:center;">
+            <span class="ayuda" style="margin:0; flex:0 0 70px;">Vertical</span>
+            <input type="range" id="heroPosY" min="0" max="100" value="50" style="flex:1;">
+          </div>
+        </div>
       </div>
 
       <label>Título <small>(usa Enter para salto de línea)</small></label>
@@ -377,6 +403,12 @@
     <label class="check"><input type="checkbox" id="pMasVendido"> Aparece en "Más vendidos"</label>
     <label class="check"><input type="checkbox" id="pAgotado"> Agotado (se bloquea la compra)</label>
 
+    <div id="pEtiquetasZona">
+      <label>Etiquetas <small>(paloméalas para este producto)</small></label>
+      <div id="pEtiquetas"></div>
+      <button class="btn mini sec" onclick="nuevaEtiquetaDesdeModal()">＋ Nueva etiqueta</button>
+    </div>
+
     <div class="modal-botones">
       <button class="btn rojo mini" id="btnEliminar" onclick="eliminarProducto()">Eliminar</button>
       <button class="btn sec" onclick="cerrarEditor()">Cancelar</button>
@@ -493,7 +525,73 @@ async function despuesDeEntrar(){
 
   document.getElementById("loginVelo").style.display = "none";
   marcarEstado("Todo guardado ✓", true);
-  pintarProductos(); pintarCategorias(); pintarInicio(); pintarDiseno();
+  if (!D.config.etiquetas) D.config.etiquetas = [];
+  pintarProductos(); pintarEtiquetas(); pintarCategorias(); pintarInicio(); pintarDiseno();
+}
+
+/* ============================================================
+   ETIQUETAS PERSONALIZADAS
+   Cada etiqueta se palomea por producto, tiene su página
+   (categoria.html?tag=id) y su sección en el inicio.
+   ============================================================ */
+function pintarEtiquetas(){
+  const cont = document.getElementById("listaEtiquetas");
+  const tags = D.config.etiquetas || [];
+  cont.innerHTML = tags.length
+    ? tags.map((t, i) => `
+      <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:999px; padding:6px 6px 6px 14px; font-size:13px; background:#fff;">
+        ${t.nombre}
+        <button class="btn mini rojo" style="border-radius:999px;" onclick="eliminarEtiqueta(${i})" aria-label="Eliminar etiqueta">✕</button>
+      </span>`).join("")
+    : '<span class="ayuda" style="margin:0;">Aún no hay etiquetas. Crea la primera.</span>';
+}
+function crearEtiqueta(nombre){
+  nombre = (nombre || "").trim();
+  if (!nombre) return null;
+  let id = slug(nombre), n = 2;
+  while ((D.config.etiquetas || []).some(t => t.id === id)) id = slug(nombre) + "-" + (n++);
+  D.config.etiquetas.push({ id, nombre });
+  /* La etiqueta nace como sección del inicio (se puede apagar en "Página de inicio") */
+  if (!D.config.secciones.some(s => s.id === "tag-" + id)) {
+    D.config.secciones.push({ id: "tag-" + id, visible: true });
+  }
+  guardarBorrador(); pintarEtiquetas(); pintarSecciones();
+  return id;
+}
+function agregarEtiqueta(){
+  crearEtiqueta(prompt('Nombre de la nueva etiqueta (ej. "Entrega inmediata"):'));
+}
+function nuevaEtiquetaDesdeModal(){
+  const id = crearEtiqueta(prompt('Nombre de la nueva etiqueta (ej. "Entrega inmediata"):'));
+  if (!id) return;
+  const marcadas = etiquetasMarcadas();
+  marcadas.push(id);
+  pintarEtiquetasProd(marcadas);
+}
+function eliminarEtiqueta(i){
+  const t = D.config.etiquetas[i];
+  const usados = D.catalogo.filter(p => (p.etiquetas || []).includes(t.id)).length;
+  if (!confirm(`¿Eliminar la etiqueta "${t.nombre}"?` + (usados ? ` Se quitará de ${usados} producto(s).` : ""))) return;
+  D.config.etiquetas.splice(i, 1);
+  D.config.secciones = D.config.secciones.filter(s => s.id !== "tag-" + t.id);
+  D.catalogo.forEach(p => {
+    if (p.etiquetas) {
+      p.etiquetas = p.etiquetas.filter(x => x !== t.id);
+      if (!p.etiquetas.length) delete p.etiquetas;
+    }
+  });
+  guardarBorrador(); pintarEtiquetas(); pintarSecciones(); pintarProductos();
+}
+function pintarEtiquetasProd(seleccionadas){
+  const cont = document.getElementById("pEtiquetas");
+  const tags = D.config.etiquetas || [];
+  cont.innerHTML = tags.length
+    ? tags.map(t => `
+      <label class="check"><input type="checkbox" data-tag="${t.id}" ${seleccionadas.includes(t.id) ? "checked" : ""}> ${t.nombre}</label>`).join("")
+    : '<p class="ayuda" style="margin:6px 0;">No hay etiquetas todavía.</p>';
+}
+function etiquetasMarcadas(){
+  return [...document.querySelectorAll("#pEtiquetas [data-tag]:checked")].map(c => c.dataset.tag);
 }
 
 /* ---------- Auto-guardado en la nube (con debounce) ---------- */
@@ -547,11 +645,19 @@ function pintarProductos(){
   const cont = document.getElementById("listaProductos");
   cont.innerHTML = D.catalogo
     .map((p, i) => ({ p, i }))
-    .filter(({p}) => !q || p.nombre.toLowerCase().includes(q))
+    .filter(({p}) => {
+      if (!q) return true;
+      const nombresTags = (p.etiquetas || []).map(id => ((D.config.etiquetas || []).find(t => t.id === id) || {}).nombre || "").join(" ");
+      return (p.nombre + " " + nombresTags).toLowerCase().includes(q);
+    })
     .map(({p, i}) => {
       const primera = fotosExistentes(p)[0];
       const fondo = primera ? `background-image:url('${primera}')` : `background:${p.grad}`;
       const nFotos = fotosExistentes(p).length;
+      const tagsProd = (p.etiquetas || [])
+        .map(id => (D.config.etiquetas || []).find(t => t.id === id))
+        .filter(Boolean)
+        .map(t => `<span class="etiqueta">${t.nombre.toUpperCase()}</span>`).join("");
       return `
       <div class="prod-item" onclick="abrirEditor(${i})">
         <div class="mini-thumb" style="${fondo}"></div>
@@ -560,6 +666,7 @@ function pintarProductos(){
             ${p.precioAntes ? '<span class="etiqueta oferta">OFERTA</span>' : ""}
             ${p.nuevo ? '<span class="etiqueta">NUEVO</span>' : ""}
             ${p.agotado ? '<span class="etiqueta agotado">AGOTADO</span>' : ""}
+            ${tagsProd}
           </div>
           <div class="meta">${fmt(p.precio)} · ${(D.categorias.find(c => c.id === p.categoria)||{}).nombre || "Sin categoría"}${nFotos > 1 ? " · " + nFotos + " fotos" : ""}</div>
         </div>
@@ -592,6 +699,7 @@ function abrirEditor(idx){
   galeriaTemp = fotosExistentes(p).map(s => ({ src: s }));
   pintarGaleria();
   pintarColoresProd(p.colores || []);
+  pintarEtiquetasProd(p.etiquetas || []);
   document.getElementById("velo").classList.add("abierto");
 }
 function cerrarEditor(){ document.getElementById("velo").classList.remove("abierto"); }
@@ -691,6 +799,9 @@ function guardarProducto(){
     imgs: fotos.length ? fotos : null,
     img: fotos[0] || null
   };
+  const tagsSel = etiquetasMarcadas();
+  if (tagsSel.length) p.etiquetas = tagsSel; else delete p.etiquetas;
+
   if (!isNaN(antes) && antes > precio) p.precioAntes = antes; else delete p.precioAntes;
   if (!p.nuevo) delete p.nuevo;
   if (!p.masVendido) delete p.masVendido;
@@ -790,6 +901,14 @@ function eliminarCategoria(i){
    INICIO: HERO + SECCIONES + PERKS
    ============================================================ */
 const NOMBRES_SEC = { categorias: "Explora nuestras categorías", ofertas: "Ofertas de la semana", novedades: "Novedades" };
+function nombreSeccion(id){
+  if (NOMBRES_SEC[id]) return NOMBRES_SEC[id];
+  if (id.startsWith("tag-")) {
+    const t = (D.config.etiquetas || []).find(x => "tag-" + x.id === id);
+    if (t) return t.nombre + " (etiqueta)";
+  }
+  return id;
+}
 
 function pintarInicio(){
   const h = D.config.hero;
@@ -800,6 +919,9 @@ function pintarInicio(){
   document.getElementById("heroTitulo").value = h.titulo || "";
   document.getElementById("heroSubtitulo").value = h.subtitulo || "";
   document.getElementById("heroBoton").value = h.boton || "";
+  document.getElementById("heroAjuste").value = h.ajuste === "completa" ? "completa" : "cubrir";
+  document.getElementById("heroPosX").value = h.posX === undefined ? 50 : h.posX;
+  document.getElementById("heroPosY").value = h.posY === undefined ? 50 : h.posY;
   mostrarZonasHero(); pintarHeroPreview(); pintarSecciones(); pintarPerks();
 }
 function mostrarZonasHero(){
@@ -809,6 +931,13 @@ function mostrarZonasHero(){
   const info = document.getElementById("heroArchivoInfo");
   info.textContent = tipo === "gradiente" ? "" : (D.config.hero.src ? "Archivo actual cargado ✓" : "Sin archivo aún — sube uno.");
 }
+function estiloMediaHero(){
+  const h = D.config.hero;
+  const ajuste = h.ajuste === "completa" ? "contain" : "cover";
+  const posX = h.posX === undefined ? 50 : h.posX;
+  const posY = h.posY === undefined ? 50 : h.posY;
+  return `object-fit:${ajuste}; object-position:${posX}% ${posY}%;` + (ajuste === "contain" ? "background:#fff;" : "");
+}
 function pintarHeroPreview(){
   const h = D.config.hero;
   const pv = document.getElementById("heroPreview");
@@ -816,12 +945,14 @@ function pintarHeroPreview(){
   document.getElementById("pvTitulo").innerHTML = (h.titulo || "").replace(/\n/g, "<br>");
   document.getElementById("pvSubtitulo").textContent = h.subtitulo || "";
   document.getElementById("pvBoton").textContent = h.boton || "";
+  /* Los sliders de posición solo sirven cuando la imagen cubre (hay recorte) */
+  document.getElementById("heroPosZona").style.display = h.ajuste === "completa" ? "none" : "block";
   if (h.tipo === "video" && h.src) {
     pv.classList.add("con-media"); pv.style.background = "";
-    capa.innerHTML = `<video src="${h.src}" autoplay muted loop playsinline></video>`;
+    capa.innerHTML = `<video src="${h.src}" style="${estiloMediaHero()}" autoplay muted loop playsinline></video>`;
   } else if (h.tipo === "imagen" && h.src) {
     pv.classList.add("con-media"); pv.style.background = "";
-    capa.innerHTML = `<img src="${h.src}">`;
+    capa.innerHTML = `<img src="${h.src}" style="${estiloMediaHero()}">`;
   } else {
     pv.classList.remove("con-media"); capa.innerHTML = "";
     pv.style.background = h.grad;
@@ -835,6 +966,12 @@ document.getElementById("heroTipo").addEventListener("change", (e) => {
   D.config.hero.grad = gradDe(document.getElementById("heroGradA").value, document.getElementById("heroGradB").value);
   guardarBorrador(); pintarHeroPreview();
 }));
+document.getElementById("heroAjuste").addEventListener("change", (e) => {
+  D.config.hero.ajuste = e.target.value === "completa" ? "completa" : "cubrir";
+  guardarBorrador(); pintarHeroPreview();
+});
+document.getElementById("heroPosX").addEventListener("input", (e) => { D.config.hero.posX = parseInt(e.target.value); guardarBorrador(); pintarHeroPreview(); });
+document.getElementById("heroPosY").addEventListener("input", (e) => { D.config.hero.posY = parseInt(e.target.value); guardarBorrador(); pintarHeroPreview(); });
 document.getElementById("heroTitulo").addEventListener("input", (e) => { D.config.hero.titulo = e.target.value; guardarBorrador(); pintarHeroPreview(); });
 document.getElementById("heroSubtitulo").addEventListener("input", (e) => { D.config.hero.subtitulo = e.target.value; guardarBorrador(); pintarHeroPreview(); });
 document.getElementById("heroBoton").addEventListener("input", (e) => { D.config.hero.boton = e.target.value; guardarBorrador(); pintarHeroPreview(); });
@@ -870,7 +1007,7 @@ function pintarSecciones(){
   cont.innerHTML = D.config.secciones.map((s, i) => `
     <div class="sec-item">
       <input type="checkbox" ${s.visible ? "checked" : ""} onchange="D.config.secciones[${i}].visible=this.checked; guardarBorrador();">
-      <div class="nombre">${NOMBRES_SEC[s.id] || s.id}</div>
+      <div class="nombre">${nombreSeccion(s.id)}</div>
       <div class="flechas">
         <button ${i === 0 ? "disabled" : ""} onclick="moverSeccion(${i}, -1)">↑</button>
         <button ${i === D.config.secciones.length - 1 ? "disabled" : ""} onclick="moverSeccion(${i}, 1)">↓</button>

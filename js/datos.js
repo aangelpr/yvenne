@@ -28,8 +28,15 @@ var CONFIG = {
     grad: "linear-gradient(135deg,#EDE6DA,#C9BFA8)",
     titulo: "Encuentra todo\nlo que necesitas",
     subtitulo: "Miles de productos para ti y tu hogar, al mejor precio.",
-    boton: "Ver productos"
+    boton: "Ver productos",
+    ajuste: "cubrir",             /* "cubrir" (puede recortar) | "completa" (sin recorte) */
+    posX: 50,                     /* posición horizontal de la imagen (0-100) */
+    posY: 50                      /* posición vertical de la imagen (0-100) */
   },
+
+  /* Etiquetas personalizadas (ej. "Entrega inmediata"): se palomean por
+     producto, tienen su página (categoria.html?tag=id) y su sección en el inicio */
+  etiquetas: [],
 
   /* Secciones del inicio: orden y visibilidad */
   secciones: [

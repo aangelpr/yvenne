@@ -83,7 +83,7 @@ function fotoPrincipal(p){ return fotosDe(p)[0] || null; }
 function thumbStyle(p){
   const f = fotoPrincipal(p);
   return f
-    ? `background-image:url('${f}'); background-size:cover; background-position:center;`
+    ? `background-image:url('${f}'); background-size:contain; background-repeat:no-repeat; background-position:center; background-color:#fff;`
     : `background:${p.grad};`;
 }
 function cardHTML(p){
@@ -170,7 +170,8 @@ function buscarProductos(q){
   const resultados = [];
   CATALOGO.forEach(p => {
     const cat = getCategoria(p.categoria);
-    const texto = normalizar(p.nombre + " " + (p.sub||"") + " " + (cat ? cat.nombre : ""));
+    const nombresTags = (p.etiquetas || []).map(id => (getEtiqueta(id) || {}).nombre || "").join(" ");
+    const texto = normalizar(p.nombre + " " + (p.sub||"") + " " + (cat ? cat.nombre : "") + " " + nombresTags);
     const palabrasTexto = texto.split(/\s+/);
     let puntaje = 0;
     const coincideTodo = palabrasBusqueda.every(pb => {
@@ -187,12 +188,42 @@ function buscarProductos(q){
   return resultados.sort((a, b) => b.puntaje - a.puntaje).map(r => r.p);
 }
 function activarBusqueda(){
-  document.querySelectorAll("[data-search]").forEach(input => {
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && input.value.trim()) {
-        window.location.href = "categoria.html?q=" + encodeURIComponent(input.value.trim());
-      }
-    });
+  /* Delegación: funciona aunque el header se dibuje después de cargar
+     los datos de la nube (antes el input aún no existía y el Enter
+     no hacía nada — por eso el buscador "no buscaba"). */
+  document.addEventListener("keydown", (e) => {
+    const input = e.target.closest ? e.target.closest("[data-search]") : null;
+    if (input && e.key === "Enter" && input.value.trim()) {
+      window.location.href = "categoria.html?q=" + encodeURIComponent(input.value.trim());
+    }
+  });
+}
+
+/* ---------- ETIQUETAS PERSONALIZADAS (ej. "Entrega inmediata") ---------- */
+function listaEtiquetas(){ return (CONFIG.etiquetas || []); }
+function getEtiqueta(id){ return listaEtiquetas().find(t => t.id === id); }
+function productosConEtiqueta(id){
+  return CATALOGO.filter(p => (p.etiquetas || []).includes(id));
+}
+/* Crea en el inicio una sección por cada etiqueta (sec-tag-<id>) para que
+   ordenarSecciones() pueda mostrarlas, ocultarlas y reordenarlas. */
+function renderSeccionesEtiquetas(){
+  const ancla = document.getElementById("envios");
+  if (!ancla) return;
+  listaEtiquetas().forEach(t => {
+    const prods = productosConEtiqueta(t.id);
+    if (!prods.length || document.getElementById("sec-tag-" + t.id)) return;
+    const sec = document.createElement("section");
+    sec.id = "sec-tag-" + t.id;
+    sec.innerHTML = `
+      <div class="section-head">
+        <h2>${t.nombre}</h2>
+        <a class="sans" href="categoria.html?tag=${t.id}">Ver todos ›</a>
+      </div>
+      <div class="prod-grid">${prods.slice(0, 5).map(cardHTML).join("")}</div>`;
+    ancla.parentNode.insertBefore(sec, ancla);
+    activarFavoritos(sec);
+    activarReveal(sec);
   });
 }
 
@@ -308,12 +339,18 @@ function renderHero(){
   if (s && h.subtitulo) s.textContent = h.subtitulo;
   if (b && h.boton) b.textContent = h.boton;
 
+  /* Ajuste de la imagen/video: encuadre y posición (editable desde el panel) */
+  const ajuste = h.ajuste === "completa" ? "contain" : "cover";
+  const posX = (h.posX === undefined ? 50 : h.posX);
+  const posY = (h.posY === undefined ? 50 : h.posY);
+  const estiloMedia = `object-fit:${ajuste}; object-position:${posX}% ${posY}%;` +
+    (ajuste === "contain" ? "background:#fff;" : "");
   if (h.tipo === "video" && h.src) {
     cont.classList.add("con-media");
-    capa.innerHTML = `<video src="${h.src}" autoplay muted loop playsinline></video>`;
+    capa.innerHTML = `<video src="${h.src}" style="${estiloMedia}" autoplay muted loop playsinline></video>`;
   } else if (h.tipo === "imagen" && h.src) {
     cont.classList.add("con-media");
-    capa.innerHTML = `<img src="${h.src}" alt="">`;
+    capa.innerHTML = `<img src="${h.src}" style="${estiloMedia}" alt="">`;
   } else {
     cont.classList.remove("con-media");
     capa.innerHTML = "";

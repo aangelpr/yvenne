@@ -12,11 +12,11 @@
 <style>
   .product-top{ display:flex; gap:48px; padding:24px 48px 50px; flex-wrap:wrap; }
   .gallery{ flex:1; min-width:320px; max-width:480px; }
-  .main-img{ aspect-ratio:1/0.92; border-radius:14px; position:relative; overflow:hidden; background-size:cover; background-position:center; }
+  .main-img{ aspect-ratio:1/0.92; border-radius:14px; position:relative; overflow:hidden; background-size:contain; background-repeat:no-repeat; background-position:center; background-color:#fff; border:1px solid var(--line); }
   .thumbs-row{ display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
   .thumb-mini{
     width:64px; height:64px; border-radius:10px; border:2px solid transparent;
-    background-size:cover; background-position:center; cursor:pointer; padding:0;
+    background-size:contain; background-repeat:no-repeat; background-position:center; background-color:#fff; cursor:pointer; padding:0;
   }
   .thumb-mini.activa{ border-color:var(--ink); }
 

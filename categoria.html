@@ -104,6 +104,7 @@ function __iniciarPagina(){
   const catId  = params.get("cat");
   const filtro = params.get("filtro");
   const query  = params.get("q");
+  const tagId  = params.get("tag");
 
   // 1) Conjunto base de productos según la URL
   let base = CATALOGO;
@@ -115,6 +116,10 @@ function __iniciarPagina(){
       base = CATALOGO.filter(p => p.categoria === catId);
       titulo = c.nombre; desc = c.desc;
     }
+  } else if (tagId) {
+    const t = getEtiqueta(tagId);
+    base = productosConEtiqueta(tagId);
+    titulo = t ? t.nombre : "Etiqueta"; desc = "";
   } else if (filtro === "ofertas") {
     base = CATALOGO.filter(p => p.precioAntes);
     titulo = "Ofertas"; desc = "Productos con descuento por tiempo limitado."; activoNav = "ofertas";
