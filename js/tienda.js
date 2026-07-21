@@ -213,10 +213,18 @@ function chipEtiquetaHTML(t){
   const c = t.color || "#F4F1EA";
   return `<span class="tag-chip" style="background:${c}; color:${textoEtiqueta(c)};">${t.nombre}</span>`;
 }
-/* Chips de etiquetas que van encima de la foto (tarjetas y página de producto) */
+/* Chips de etiquetas que van encima de la foto (tarjetas y página de producto).
+   Cada etiqueta puede tener su esquina: bl (abajo izq., por defecto), br, tl, tr. */
 function chipsEtiquetasHTML(p){
   const tags = (p.etiquetas || []).map(getEtiqueta).filter(Boolean);
-  return tags.length ? `<div class="tag-chips">${tags.map(chipEtiquetaHTML).join("")}</div>` : "";
+  if (!tags.length) return "";
+  const porPos = {};
+  tags.forEach(t => {
+    const pos = t.pos || "bl";
+    (porPos[pos] = porPos[pos] || []).push(t);
+  });
+  return Object.keys(porPos).map(pos =>
+    `<div class="tag-chips pos-${pos}">${porPos[pos].map(chipEtiquetaHTML).join("")}</div>`).join("");
 }
 function productosConEtiqueta(id){
   return CATALOGO.filter(p => (p.etiquetas || []).includes(id));

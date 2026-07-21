@@ -96,7 +96,7 @@
 
 <div class="product-top" id="productTop" style="display:none;">
   <div class="gallery">
-    <div class="main-img" id="mainImg"><span class="badge" id="badgeNuevo" style="display:none;">NUEVO</span><div class="tag-chips" id="prodTags"></div></div>
+    <div class="main-img" id="mainImg"><span class="badge" id="badgeNuevo" style="display:none;">NUEVO</span><div id="prodTags" style="display:contents;"></div></div>
     <div class="thumbs-row" id="thumbsRow" style="display:none;"></div>
   </div>
 
@@ -232,9 +232,8 @@ function __iniciarPagina(){
     }
     if (producto.nuevo) document.getElementById("badgeNuevo").style.display = "inline-block";
 
-    // Etiquetas personalizadas encima de la foto
-    const tagsProd = (producto.etiquetas || []).map(getEtiqueta).filter(Boolean);
-    if (tagsProd.length) document.getElementById("prodTags").innerHTML = tagsProd.map(chipEtiquetaHTML).join("");
+    // Etiquetas personalizadas encima de la foto (cada una en su esquina)
+    document.getElementById("prodTags").innerHTML = chipsEtiquetasHTML(producto);
 
     // Datos
     document.getElementById("prodNombre").textContent = producto.nombre;

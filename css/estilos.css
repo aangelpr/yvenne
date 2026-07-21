@@ -73,6 +73,9 @@ nav a.active{ font-weight:700; }
   position:absolute; left:10px; bottom:10px; right:10px;
   display:flex; flex-wrap:wrap; gap:5px; pointer-events:none;
 }
+.tag-chips.pos-br{ justify-content:flex-end; }
+.tag-chips.pos-tl{ top:10px; bottom:auto; }
+.tag-chips.pos-tr{ top:10px; bottom:auto; justify-content:flex-end; }
 .tag-chip{
   font-size:10px; font-weight:700; letter-spacing:0.4px; text-transform:uppercase;
   padding:4px 9px; border-radius:999px; font-family:-apple-system,sans-serif;

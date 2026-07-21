@@ -546,11 +546,19 @@ function pintarEtiquetas(){
   cont.innerHTML = tags.length
     ? tags.map((t, i) => {
       const c = t.color || "#F4F1EA";
+      const pos = t.pos || "bl";
       return `
       <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:999px; padding:6px 6px 6px 6px; font-size:13px; background:#fff;">
         <span class="etiqueta" style="margin-left:0; background:${c}; color:${textoSobreColor(c)};">${t.nombre.toUpperCase()}</span>
         <input type="color" value="${c}" onchange="cambiarColorEtiqueta(${i}, this.value)" title="Cambiar color de la etiqueta"
           style="width:26px; height:26px; border:1px solid var(--line); border-radius:6px; padding:1px; background:#fff; cursor:pointer;">
+        <select onchange="cambiarPosEtiqueta(${i}, this.value)" title="Posición de la etiqueta sobre la foto"
+          style="border:1px solid var(--line); border-radius:8px; padding:4px 6px; font-size:12px; background:#fff; cursor:pointer; font-family:inherit;">
+          <option value="bl" ${pos === "bl" ? "selected" : ""}>Abajo izq.</option>
+          <option value="br" ${pos === "br" ? "selected" : ""}>Abajo der.</option>
+          <option value="tl" ${pos === "tl" ? "selected" : ""}>Arriba izq.</option>
+          <option value="tr" ${pos === "tr" ? "selected" : ""}>Arriba der.</option>
+        </select>
         <button class="btn mini rojo" style="border-radius:999px;" onclick="eliminarEtiqueta(${i})" aria-label="Eliminar etiqueta">✕</button>
       </span>`;
     }).join("")
@@ -559,6 +567,10 @@ function pintarEtiquetas(){
 function cambiarColorEtiqueta(i, color){
   D.config.etiquetas[i].color = color;
   guardarBorrador(); pintarEtiquetas(); pintarProductos();
+}
+function cambiarPosEtiqueta(i, pos){
+  D.config.etiquetas[i].pos = pos;
+  guardarBorrador(); pintarEtiquetas();
 }
 function crearEtiqueta(nombre){
   nombre = (nombre || "").trim();
