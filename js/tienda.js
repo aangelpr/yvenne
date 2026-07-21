@@ -99,6 +99,7 @@ function cardHTML(p){
   <div class="card" data-id="${p.id}">
     <a class="card-link" href="producto.html?id=${p.id}" aria-label="${p.nombre}">
       <div class="thumb-photo" style="${thumbStyle(p)}"></div>
+      ${chipsEtiquetasHTML(p)}
     </a>
     ${badge}
     <button class="fav ${fav ? "is-fav" : ""}" data-fav="${p.id}" aria-label="Agregar a favoritos">
@@ -202,6 +203,21 @@ function activarBusqueda(){
 /* ---------- ETIQUETAS PERSONALIZADAS (ej. "Entrega inmediata") ---------- */
 function listaEtiquetas(){ return (CONFIG.etiquetas || []); }
 function getEtiqueta(id){ return listaEtiquetas().find(t => t.id === id); }
+/* Texto blanco o negro según qué tan claro sea el color de fondo */
+function textoEtiqueta(hex){
+  if (!hex || hex[0] !== "#" || hex.length < 7) return "#1F1B16";
+  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+  return (r * 0.299 + g * 0.587 + b * 0.114) > 150 ? "#1F1B16" : "#fff";
+}
+function chipEtiquetaHTML(t){
+  const c = t.color || "#F4F1EA";
+  return `<span class="tag-chip" style="background:${c}; color:${textoEtiqueta(c)};">${t.nombre}</span>`;
+}
+/* Chips de etiquetas que van encima de la foto (tarjetas y página de producto) */
+function chipsEtiquetasHTML(p){
+  const tags = (p.etiquetas || []).map(getEtiqueta).filter(Boolean);
+  return tags.length ? `<div class="tag-chips">${tags.map(chipEtiquetaHTML).join("")}</div>` : "";
+}
 function productosConEtiqueta(id){
   return CATALOGO.filter(p => (p.etiquetas || []).includes(id));
 }
